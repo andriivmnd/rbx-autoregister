@@ -136,7 +136,7 @@ def set_2fa(id_profile, cookie):
         return False
     return True
 
-def set_pin(cookie, pin, password):
+"""def set_pin(cookie, pin, password):
     if not is_cookie_valid(cookie):
         return False
 
@@ -155,10 +155,10 @@ def set_pin(cookie, pin, password):
     }
 
     _request = requests.post('https://auth.roblox.com/v1/account/pin', cookies=cookies, headers=headers, data=data)
-    if "errors" in _request:
-        print(_request.json())
+    if "errors" in _request.json():
+        print(_request.json(), data, response.json())
         return False
-    return True
+    return True"""
 
 def register(sheet_login, sheet_password):
     #Регистрация
@@ -200,7 +200,7 @@ def register(sheet_login, sheet_password):
     while True:
         time.sleep(1)
         try:
-            driver.find_element(By.ID, "fc-iframe-wrap")
+            driver.find_element(By.ID, "challenge-captcha-element")
         except exceptions.NoSuchElementException:
             break
 
@@ -235,10 +235,10 @@ def function_register(name, row_start=1):
         print(f"reg. Finished the row: {i}")
         excel_book.save(name)
 
-def function_login(name, row_start=1, row_count=1):
+def function_login(name, row_start=1):
     excel_book = openpyxl.load_workbook(name)
     sheet_obj = excel_book.active
-    for i in range(row_start, row_count+row_start):
+    for i in range(row_start, sheet_obj.max_row+1):
         print(f"2fa. Started the row: {i}")
         sheet_login = sheet_obj.cell(row = i, column = 1)
         sheet_password = sheet_obj.cell(row = i, column = 2)
@@ -248,7 +248,7 @@ def function_login(name, row_start=1, row_count=1):
         sheet_cookie = sheet_obj.cell(row = i, column = 7)
         sheet_ifoldstep = sheet_obj.cell(row = i, column = 8)
 
-        if sheet_login:
+        if sheet_login and sheet_ifoldstep.value != "true":
             step = 1
             while True:
                 status, cookie = function_2fa(sheet_login.value, sheet_password.value, sheet_pin.value, sheet_cookie.value, step)
@@ -293,9 +293,12 @@ def function_2fa(login, password, pin, cookie, step):
         while True:
             time.sleep(1)
             try:
-                driver.find_element(By.ID, "fc-iframe-wrap")
-                print("fc-iframe-wrap")
+                driver.find_element(By.ID, "challenge-captcha-element")
+                time.sleep(1)
+                driver.find_element(By.ID, "challenge-captcha-element")
+                print("challenge-captcha-element")
             except exceptions.NoSuchElementException:
+                print("Капчу не нашел, или её уже ввели")
                 break
 
         time.sleep(3)
@@ -312,6 +315,7 @@ def function_2fa(login, password, pin, cookie, step):
                 button.click()
                 break
             except:
+                print("двухфакторки не нашел или она уже введена")
                 break
 
         #Ждём пока авторизация пройдёт успешно
@@ -359,8 +363,49 @@ def function_2fa(login, password, pin, cookie, step):
     if step <= 4:
         print("PIN")
         step = 4
-        if not set_pin(cookie, pin, password):
-            return False, step
+        #if not set_pin(cookie, pin, password):
+            #return False, step
+
+        #Проверка пинкода
+        while True:
+            driver.get('https://www.roblox.com/my/account#!/parental-controls')
+            time.sleep(2)
+
+            if driver.current_url != "https://www.roblox.com/my/account#!/parental-controls":
+                return False, step
+
+            try:
+                span = driver.find_element(By.ID, "accountPin-toggle").get_attribute('class')
+                if span != "btn-toggle receiver-destination-type-toggle on":
+                    button = driver.find_element(By.ID, "accountPin-toggle")
+                    button.click()
+                    time.sleep(1)
+
+                    _input = driver.find_element(By.XPATH, "//input[@name='newPin']")
+                    _input.send_keys(pin)
+                    _input = driver.find_element(By.XPATH, "//input[@name='newPinConfirm']")
+                    _input.send_keys(pin)
+
+                    button = driver.find_element(By.XPATH, "//button[@type='submit'][@class='modal-button btn-secondary-md ng-binding']")
+                    button.click()
+                    time.sleep(1)
+
+                    try:
+                        _input = driver.find_element(By.ID, "reauthentication-password-input")
+                        _input.send_keys(password)
+                        button = driver.find_element(By.XPATH, "//button[@type='button'][@class='btn-cta-md modal-modern-footer-button']")
+                        button.click()
+                        time.sleep(1)
+                    except:
+                        pass
+
+                    span = driver.find_element(By.ID, "accountPin-toggle").get_attribute('class')
+                    if span == "btn-toggle receiver-destination-type-toggle on":
+                        break
+                else: 
+                    break
+            except:
+                pass
 
     if step <= 5:
         step = 5
@@ -474,9 +519,9 @@ def main():
     elif select == "3":
         name = "output/" + input("Select file name: ") + ".xlsx"
         row_start = int(input("Select row start: "))
-        row_count = int(input("Select row count: "))
+        #row_count = int(input("Select row count: "))
         if os.path.exists(name):
-            function_login(name, row_start, row_count)
+            function_login(name, row_start)
         else:
             print(f"No exists file {name}")
 
