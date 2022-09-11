@@ -13,6 +13,10 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 import config
 
+options = webdriver.ChromeOptions()
+options.add_argument('--disable-notifications')
+options.add_argument("--window-size=100,500")
+
 def is_cookie_valid(cookie):
     """Проверка через API роблокса работоспособность куки"""
     c = requests.Session()
@@ -163,7 +167,7 @@ def set_2fa(id_profile, cookie):
 def register(sheet_login, sheet_password):
     #Регистрация
     service = ChromeService(executable_path=ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service)
+    driver = webdriver.Chrome(service=service, options=options)
     driver.get('https://www.roblox.com/')
     month = Select(driver.find_element(By.ID, "MonthDropdown"))
     month.select_by_value("Jan")
@@ -214,64 +218,14 @@ def register(sheet_login, sheet_password):
 
     return sheet_login, cookie, infoTb[1], infoTb[0]
 
-
-def function_register(name, row_start=1):
-    excel_book = openpyxl.load_workbook(name)
-    sheet_obj = excel_book.active
-    for i in range(row_start, sheet_obj.max_row+1):
-        print(f"reg. Started the row: {i}")
-        sheet_login = sheet_obj.cell(row = i, column = 1)
-        sheet_password = sheet_obj.cell(row = i, column = 2)
-        sheet_pin = sheet_obj.cell(row = i, column = 4)
-        sheet_url = sheet_obj.cell(row = i, column = 5)
-        sheet_accesscode = sheet_obj.cell(row = i, column = 6)
-        sheet_cookie = sheet_obj.cell(row = i, column = 7)
-
-        nickname, cookie, url, accesscode = register(sheet_login.value, sheet_password.value)
-        sheet_login.value = nickname
-        sheet_cookie.value = cookie
-        sheet_url.value = url
-        sheet_accesscode.value = accesscode
-        print(f"reg. Finished the row: {i}")
-        excel_book.save(name)
-
-def function_login(name, row_start=1):
-    excel_book = openpyxl.load_workbook(name)
-    sheet_obj = excel_book.active
-    for i in range(row_start, sheet_obj.max_row+1):
-        print(f"2fa. Started the row: {i}")
-        sheet_login = sheet_obj.cell(row = i, column = 1)
-        sheet_password = sheet_obj.cell(row = i, column = 2)
-        sheet_pin = sheet_obj.cell(row = i, column = 4)
-        sheet_url = sheet_obj.cell(row = i, column = 5)
-        sheet_accesscode = sheet_obj.cell(row = i, column = 6)
-        sheet_cookie = sheet_obj.cell(row = i, column = 7)
-        sheet_ifoldstep = sheet_obj.cell(row = i, column = 8)
-
-        if sheet_login and sheet_ifoldstep.value != "true":
-            step = 1
-            while True:
-                status, cookie = function_2fa(sheet_login.value, sheet_password.value, sheet_pin.value, sheet_cookie.value, step)
-                if status == True:
-                    sheet_cookie.value = cookie
-                    sheet_ifoldstep.value = "true"
-                    print(f"2fa. Finished the row: {i}")
-                    break
-                else:
-                    print(f"STEP: {cookie}")
-                    step = cookie
-
-
-        excel_book.save(name)
-
 def function_2fa(login, password, pin, cookie, step):
     service = ChromeService(executable_path=ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service)
+    driver = webdriver.Chrome(service=service, options=options)
 
     driver.get('https://www.roblox.com/') #Заходим на страницу чтобы задать куки
 
     #Проверяем прошла ли авторизация успешно
-    if step == 1 and cookie and is_cookie_valid(cookie): #driver.current_url == "https://www.roblox.com/home":
+    if (step == 1 or step == 4) and cookie and is_cookie_valid(cookie): #driver.current_url == "https://www.roblox.com/home":
         driver.add_cookie({"name":".ROBLOSECURITY","value":cookie,"path":"/","domain":"roblox.com"})
         driver.get('https://www.roblox.com/')
     else: #Авторизация если кука неправильная
@@ -420,7 +374,7 @@ def function_2fa(login, password, pin, cookie, step):
 session_saves_mail = {}
 def getLastMail_info(login, password, wait):
     service = ChromeService(executable_path=ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service)
+    driver = webdriver.Chrome(service=service, options=options)
 
     #Авторизация в почте
     driver.get(f'http://{config.URL_MAIL}/roundcubemail')
@@ -494,12 +448,90 @@ def getLastMail_info(login, password, wait):
         except:
             time.sleep(3) #Ждём пока будет нужное письмо
 
+def function_register(name, row_start=1):
+    excel_book = openpyxl.load_workbook(name)
+    sheet_obj = excel_book.active
+    for i in range(row_start, sheet_obj.max_row+1):
+        print(f"reg. Started the row: {i}")
+        sheet_login = sheet_obj.cell(row = i, column = 1)
+        sheet_password = sheet_obj.cell(row = i, column = 2)
+        sheet_pin = sheet_obj.cell(row = i, column = 4)
+        sheet_url = sheet_obj.cell(row = i, column = 5)
+        sheet_accesscode = sheet_obj.cell(row = i, column = 6)
+        sheet_cookie = sheet_obj.cell(row = i, column = 7)
+
+        nickname, cookie, url, accesscode = register(sheet_login.value, sheet_password.value)
+        sheet_login.value = nickname
+        sheet_cookie.value = cookie
+        sheet_url.value = url
+        sheet_accesscode.value = accesscode
+        print(f"reg. Finished the row: {i}")
+        excel_book.save(name)
+
+def function_login(name, row_start=1):
+    excel_book = openpyxl.load_workbook(name)
+    sheet_obj = excel_book.active
+    for i in range(row_start, sheet_obj.max_row+1):
+        print(f"2fa. Started the row: {i}")
+        sheet_login = sheet_obj.cell(row = i, column = 1)
+        sheet_password = sheet_obj.cell(row = i, column = 2)
+        sheet_pin = sheet_obj.cell(row = i, column = 4)
+        sheet_url = sheet_obj.cell(row = i, column = 5)
+        sheet_accesscode = sheet_obj.cell(row = i, column = 6)
+        sheet_cookie = sheet_obj.cell(row = i, column = 7)
+        sheet_ifoldstep = sheet_obj.cell(row = i, column = 8)
+
+        if sheet_login and sheet_ifoldstep.value != "true":
+            step = 1
+            while True:
+                status, cookie = function_2fa(sheet_login.value, sheet_password.value, sheet_pin.value, sheet_cookie.value, step)
+                if status == True:
+                    sheet_cookie.value = cookie
+                    sheet_ifoldstep.value = "true"
+                    print(f"2fa. Finished the row: {i}")
+                    break
+                else:
+                    print(f"STEP: {cookie}")
+                    step = cookie
+
+
+        excel_book.save(name)
+
+def checkPin(name, row_start=1):
+    excel_book = openpyxl.load_workbook(name)
+    sheet_obj = excel_book.active
+    for i in range(row_start, sheet_obj.max_row+1):
+        print(f"pin. Started the row: {i}")
+        sheet_login = sheet_obj.cell(row = i, column = 1)
+        sheet_password = sheet_obj.cell(row = i, column = 2)
+        sheet_pin = sheet_obj.cell(row = i, column = 4)
+        sheet_url = sheet_obj.cell(row = i, column = 5)
+        sheet_accesscode = sheet_obj.cell(row = i, column = 6)
+        sheet_cookie = sheet_obj.cell(row = i, column = 7)
+
+        if sheet_login:
+            step = 4
+            while True:
+                status, cookie = function_2fa(sheet_login.value, sheet_password.value, sheet_pin.value, sheet_cookie.value, step)
+                if status == True:
+                    sheet_cookie.value = cookie
+                    print(f"pin. Finished the row: {i}")
+                    break
+                else:
+                    print(f"STEP: {cookie}")
+                    step = cookie
+
+
+        excel_book.save(name)
+
+
+
 def main():
     for dir in ["output"]:
         if not os.path.exists(dir):
             os.makedirs(dir)
 
-    print("\nВыбор функционала:\n1. Создание аккаунтов(с генерацией)\n2. Создание аккаунтов(без генерации)\n3. Включение 2fa\n")
+    print("\nВыбор функционала:\n1. Создание аккаунтов(с генерацией)\n2. Создание аккаунтов(без генерации)\n3. Включение 2fa\n4. Проверка и установка пинкода\n")
     select = input("Select function: ")
     
     if select == "1":
@@ -522,6 +554,14 @@ def main():
         #row_count = int(input("Select row count: "))
         if os.path.exists(name):
             function_login(name, row_start)
+        else:
+            print(f"No exists file {name}")
+
+    elif select == "4":
+        name = "output/" + input("Select file name: ") + ".xlsx"
+        row_start = int(input("Select row start: "))
+        if os.path.exists(name):
+            checkPin(name, row_start)
         else:
             print(f"No exists file {name}")
 
