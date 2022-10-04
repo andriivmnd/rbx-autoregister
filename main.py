@@ -15,7 +15,7 @@ import config
 
 options = webdriver.ChromeOptions()
 options.add_argument('--disable-notifications')
-options.add_argument("--window-size=100,500")
+options.add_argument("--window-size=300,850")
 
 def is_cookie_valid(cookie):
     """Проверка через API роблокса работоспособность куки"""
@@ -106,7 +106,7 @@ def send_set_mail(username, cookie, mail, password):
 
             _request = requests.post('https://accountsettings.roblox.com/v1/email', cookies=cookies, headers=headers, data=data).json()
             if "errors" in _request:
-                if _request['errors'][0]['code'] == 4: #Если этот мейл уже стоит
+                if _request['errors'][0]['code'] == 4 or _request['errors'][0]['message'] == 'Challenge is required to authorize the request': #Если этот мейл уже стоит
                     return True
                 elif _request['errors'][0]['message'] == "Token Validation Failed":
                     getXsrfToken(cookie, True)[0]
@@ -135,8 +135,8 @@ def set_2fa(id_profile, cookie):
     json_data = {}
 
     _request = requests.post(f'https://twostepverification.roblox.com/v1/users/{id_profile}/configuration/email/enable', cookies=cookies, headers=headers, json=json_data)
-    if "errors" in _request:
-        print(_request.json())
+    if "errors" in _request.text:
+        print(_request.text)
         return False
     return True
 
@@ -309,9 +309,38 @@ def function_2fa(login, password, pin, cookie, step):
     if step <= 3:
         print("2FA")
         step = 3
-        userid = driver.find_element(By.XPATH,"//meta[@name='user-data']").get_attribute("data-userid")
-        if not set_2fa(userid, cookie):
-            return False, step
+        #userid = driver.find_element(By.XPATH,"//meta[@name='user-data']").get_attribute("data-userid")
+        #if not set_2fa(userid, cookie):
+            #return False, step
+
+        while True:
+            driver.get('https://www.roblox.com/my/account#!/security')
+            time.sleep(2)
+
+            if driver.current_url != "https://www.roblox.com/my/account#!/security":
+                return False, step
+
+            try:
+                btn = driver.find_element(By.ID, "2sv-toggle")
+                if btn.get_attribute('class') != "btn-toggle receiver-destination-type-toggle on":
+                    btn.click()
+                    time.sleep(1)
+
+                    try:
+                        _input = driver.find_element(By.ID, "reauthentication-password-input")
+                        _input.send_keys(password)
+                        button = driver.find_element(By.XPATH, "//button[@type='button'][@class='btn-cta-md modal-modern-footer-button']")
+                        button.click()
+                        time.sleep(1)
+                    except:
+                        pass
+
+                    if btn == "btn-toggle receiver-destination-type-toggle on":
+                        break
+                else:
+                    break
+            except:
+                pass
 
     #PIN
     if step <= 4:
@@ -343,6 +372,20 @@ def function_2fa(login, password, pin, cookie, step):
                     button = driver.find_element(By.XPATH, "//button[@type='submit'][@class='modal-button btn-secondary-md ng-binding']")
                     button.click()
                     time.sleep(1)
+
+                    try:
+                        print("two-step-verification-code-input")
+                        _input = driver.find_element(By.ID, "two-step-verification-code-input")
+                        code = getLastMail_info(login, password, "confirmLogin")
+
+                        _input.send_keys(code)
+
+                        button = driver.find_element(By.XPATH, "//button[@type='button'][@class='btn-cta-md modal-modern-footer-button']")
+                        button.click()
+                        time.sleep(1)
+                    except:
+                        print("двухфакторки не нашел или она уже введена")
+                        pass
 
                     try:
                         _input = driver.find_element(By.ID, "reauthentication-password-input")
