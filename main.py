@@ -76,9 +76,9 @@ def buyVipServer(username, cookie):
 
             _request = requests.post(uri, headers=headers, cookies=cookies, data=data).json()
 
-            uri_2 = f"https://games.roblox.com/v1/vip-servers/{_request['vipServerId']}"
-            data_2 = {"newJoinCode": True}
-            _request_2 = requests.patch(uri_2, headers=headers, cookies=cookies, data=data_2).json()
+            _request_2 = requests.patch(f"https://games.roblox.com/v1/vip-servers/{_request['vipServerId']}", headers=headers, cookies=cookies, data={"newJoinCode": True}).json()
+
+            _request_3 = requests.patch(f"https://games.roblox.com/v1/vip-servers/{_request['vipServerId']}/permissions", headers=headers, cookies=cookies, data={"friendsAllowed": True,}).json()
 
             return [_request["accessCode"], "https://www.roblox.com/games/920587237?privateServerLinkCode=" + _request_2["joinCode"]]
         except Exception as D:
