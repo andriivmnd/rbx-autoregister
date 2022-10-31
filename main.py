@@ -371,7 +371,7 @@ def function_2fa(login, password, pin, cookie, step):
 
                     button = driver.find_element(By.XPATH, "//button[@type='submit'][@class='modal-button btn-secondary-md ng-binding']")
                     button.click()
-                    time.sleep(1)
+                    time.sleep(3)
 
                     try:
                         print("two-step-verification-code-input")
