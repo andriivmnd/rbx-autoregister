@@ -8,7 +8,7 @@ from datetime import datetime
 
 # Settings
 nickname_size = 8
-password_size = 20
+password_size = 30
 row = 0
 
 def gennick():
@@ -26,7 +26,7 @@ def gennick():
 def generate():
     nickname = gennick()
     while True:
-        password = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(password_size))
+        password = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(password_size))
         if (sum(c.islower() for c in password) >= 4
                 and sum(c.isupper() for c in password) >= 4
                 and sum(c.isdigit() for c in password) >= 4):

@@ -147,6 +147,22 @@ def set_2fa(id_profile, cookie):
     headers = {"X-CSRF-TOKEN": getXsrfToken(cookie)[0]}
     cookies = {".ROBLOSECURITY": cookie}
 
+    response = requests.post('https://auth.roblox.com/v1/account/pin', cookies=cookies, headers=headers, json={
+        'pin': pin,
+        'reauthenticationToken': '',
+    })
+
+    response2 = requests.post('https://apis.roblox.com/reauthentication-service/v1/token/generate', cookies=cookies, headers=headers,json={
+        'password': password,
+    }).json()
+
+    response3 = requests.post('https://auth.roblox.com/v1/account/pin', cookies=cookies, headers=headers, json={
+        'pin': pin,
+        'reauthenticationToken': response2['token'],
+    })
+
+    return False
+
     response = requests.post('https://apis.roblox.com/reauthentication-service/v1/token/generate', cookies=cookies, headers=headers, json={
         'password': password,
     })
@@ -283,7 +299,7 @@ def function_2fa(login, password, pin, cookie, step):
     if step <= 2:
         print("MAIL")
         step = 2
-        mail = config.TEST_MAIL and config.TEST_MAIL[0] or f"{login}@rbxspace.gg"
+        mail = config.TEST_MAIL and config.TEST_MAIL[0] or f"{login}@adaptivestrikes.com"
             
         while True:
             if send_set_mail(login, cookie, mail, password):
@@ -343,11 +359,11 @@ def function_2fa(login, password, pin, cookie, step):
                 pass
 
     #PIN
-    if step <= 4:
+    """if step <= 4:
         print("PIN")
         step = 4
-        #if not set_pin(cookie, pin, password):
-            #return False, step
+        if not set_pin(cookie, pin, password):
+            return False, step
 
         #Проверка пинкода
         while True:
@@ -387,14 +403,18 @@ def function_2fa(login, password, pin, cookie, step):
                         print("двухфакторки не нашел или она уже введена")
                         pass
 
-                    try:
-                        _input = driver.find_element(By.ID, "reauthentication-password-input")
-                        _input.send_keys(password)
-                        button = driver.find_element(By.XPATH, "//button[@type='button'][@class='btn-cta-md modal-modern-footer-button']")
-                        button.click()
-                        time.sleep(1)
-                    except:
-                        pass
+                    while True:
+                        try:
+                            _input = driver.find_element(By.ID, "reauthentication-password-input")
+                            _input.send_keys(password)
+
+                            time.sleep(1)
+                            button = driver.find_element(By.XPATH, "//button[@type='button'][@class='btn-cta-md modal-modern-footer-button']")
+                            button.click()
+                            time.sleep(1)
+                        except Exception as error:
+                            print(error)
+                            break
 
                     span = driver.find_element(By.ID, "accountPin-toggle").get_attribute('class')
                     if span == "btn-toggle receiver-destination-type-toggle on":
@@ -402,7 +422,7 @@ def function_2fa(login, password, pin, cookie, step):
                 else: 
                     break
             except:
-                pass
+                pass"""
 
     if step <= 5:
         step = 5
@@ -421,7 +441,7 @@ def getLastMail_info(login, password, wait):
 
     #Авторизация в почте
     driver.get(f'http://{config.URL_MAIL}/roundcubemail')
-    mail_login = config.TEST_MAIL and config.TEST_MAIL[0] or f"{login}@rbxspace.gg"
+    mail_login = config.TEST_MAIL and config.TEST_MAIL[0] or f"{login}@adaptivestrikes.com"
     if mail_login in session_saves_mail:
         driver.add_cookie({"name":"language","value":"ru","path":"/","domain":config.URL_MAIL})
         driver.add_cookie({"name":"roundcube_sessauth","value":session_saves_mail[mail_login][0],"path":"/","domain":config.URL_MAIL})
