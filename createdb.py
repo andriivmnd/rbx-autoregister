@@ -27,6 +27,7 @@ def generate():
     nickname = gennick()
     while True:
         password = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(password_size))
+        password = random.choice(string.ascii_letters + string.digits)+password
         if (sum(c.islower() for c in password) >= 4
                 and sum(c.isupper() for c in password) >= 4
                 and sum(c.isdigit() for c in password) >= 4):
